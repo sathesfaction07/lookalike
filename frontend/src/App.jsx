@@ -71,7 +71,7 @@ function App() {
             <nav className="fixed top-0 left-0 right-0 z-50 nav-blur border-b border-white/5">
                 <div className="max-w-5xl mx-auto px-6 h-14 flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                        <span className="text-accent font-semibold text-sm tracking-wide">ImageCluster</span>
+                        <span className="text-accent font-semibold text-sm tracking-wide">Lookalike</span>
                         <span className="text-[10px] text-slate-500 font-mono bg-white/5 px-2 py-0.5 rounded">v2.0</span>
                     </div>
                     <span className="text-[11px] text-slate-500">Visual similarity detection at scale</span>

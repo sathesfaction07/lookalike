@@ -1,4 +1,4 @@
-# ImageCluster
+# Lookalike
 
 Groups product images by visual similarity using deep learning embeddings and vector search. Designed for large catalogs (500K+ images) where you need to find duplicates, near-duplicates, or suspiciously similar listings. Supports three embedding backends — local EfficientNet, AWS Titan Multimodal, and Google Vertex — selectable at runtime.
 
@@ -30,8 +30,8 @@ A product catalog with half a million images accumulates duplicates — same pro
 
 Switch at runtime:
 ```bash
-image-cluster --input data.csv --output results/ --backend titan --aws-region us-east-1
-image-cluster --input data.csv --output results/ --backend vertex --gcp-project my-project
+lookalike --input data.csv --output results/ --backend titan --aws-region us-east-1
+lookalike --input data.csv --output results/ --backend vertex --gcp-project my-project
 ```
 
 ---
@@ -78,9 +78,9 @@ Two modes: CLI (batch processing) and Web (interactive exploration).
 ```bash
 pip install -e ".[dev]"
 
-image-cluster --input data/sample_input.csv --output results/
-image-cluster --input data.csv --output results/ --backend titan --report
-image-cluster --input data.csv --output results/ --threshold 0.85
+lookalike --input data/sample_input.csv --output results/
+lookalike --input data.csv --output results/ --backend titan --report
+lookalike --input data.csv --output results/ --threshold 0.85
 ```
 
 **Web mode** — for ad-hoc exploration, visual review, threshold tuning:
@@ -99,7 +99,7 @@ Then open `http://localhost:3000`. Upload images, pick a backend, adjust thresho
 ## Project Structure
 
 ```
-image-cluster/
+lookalike/
 ├── src/image_cluster/
 │   ├── cli.py                  CLI entry point (batch mode)
 │   ├── config.py               PipelineConfig with auto batch-size

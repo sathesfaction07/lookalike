@@ -1,8 +1,8 @@
-# ImageCluster — Technical Architecture
+# Lookalike — Technical Architecture
 
 ## Overview
 
-ImageCluster groups product images by visual similarity using deep learning embeddings (EfficientNet-B0, AWS Titan Multimodal, or Google Vertex AI) combined with FAISS vector similarity search and Union-Find transitive clustering. Designed for large catalogs (500K+ images), it detects duplicates, near-duplicates, and visually similar listings through a crash-tolerant, checkpoint-based pipeline with optional interactive web UI for threshold tuning.
+Lookalike groups product images by visual similarity using deep learning embeddings (EfficientNet-B0, AWS Titan Multimodal, or Google Vertex AI) combined with FAISS vector similarity search and Union-Find transitive clustering. Designed for large catalogs (500K+ images), it detects duplicates, near-duplicates, and visually similar listings through a crash-tolerant, checkpoint-based pipeline with optional interactive web UI for threshold tuning.
 
 **Design principle:** Incremental by default. All processing state checkpoints to disk every 500 items. Stop anytime, add new images to the CSV, re-run — only new items are processed and searched against the full existing index.
 
@@ -111,7 +111,7 @@ ImageCluster groups product images by visual similarity using deep learning embe
 
 ### 1. CLI (`src/image_cluster/cli.py`)
 
-Entry point: `image-cluster` (console script).
+Entry point: `lookalike` (console script).
 
 | Option | Type | Default | Purpose |
 |:--|:--|:--|:--|
@@ -385,16 +385,16 @@ Auto-tuning uses `psutil` to read available RAM at startup. During runtime, `Clu
 pip install -e ".[dev,titan,vertex]"
 
 # CLI batch processing (local backend, default threshold)
-image-cluster --input data/catalog.csv --output results/
+lookalike --input data/catalog.csv --output results/
 
 # CLI with AWS Titan backend + HTML report
-image-cluster --input data.csv --output results/ --backend titan --aws-region us-east-1 --report
+lookalike --input data.csv --output results/ --backend titan --aws-region us-east-1 --report
 
 # CLI with Google Vertex backend
-image-cluster --input data.csv --output results/ --backend vertex --gcp-project my-project-id
+lookalike --input data.csv --output results/ --backend vertex --gcp-project my-project-id
 
 # CLI with custom threshold (stricter = fewer, tighter clusters)
-image-cluster --input data.csv --output results/ --threshold 0.95
+lookalike --input data.csv --output results/ --threshold 0.95
 
 # Start FastAPI server (web mode)
 uvicorn image_cluster.api.app:app --port 8000 --reload

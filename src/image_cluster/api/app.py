@@ -22,7 +22,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger("image_cluster")
 
-app = FastAPI(title="ImageCluster API")
+app = FastAPI(title="Lookalike API")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 
 UPLOAD_DIR = Path("uploads")

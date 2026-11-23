@@ -9,4 +9,4 @@ RUN pip install --no-cache-dir .
 COPY src/ src/
 COPY data/ data/
 
-ENTRYPOINT ["image-cluster"]
+ENTRYPOINT ["lookalike"]
