@@ -1,0 +1,58 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "image-cluster"
+version = "1.0.0"
+description = "Deep learning image clustering at scale with crash-tolerant checkpointing"
+requires-python = ">=3.11"
+dependencies = [
+    "torch>=2.2",
+    "torchvision>=0.17",
+    "faiss-cpu>=1.8",
+    "Pillow>=10.0",
+    "numpy>=1.26",
+    "psutil>=5.9",
+    "rich>=13.0",
+    "click>=8.1",
+    "fastapi>=0.111",
+    "uvicorn>=0.30",
+    "python-multipart>=0.0.9",
+]
+
+[project.optional-dependencies]
+titan = ["boto3>=1.34"]
+vertex = ["google-cloud-aiplatform>=1.50"]
+dev = [
+    "pytest>=8.0",
+    "pytest-cov>=5.0",
+    "ruff>=0.4",
+    "mypy>=1.9",
+]
+
+[project.scripts]
+image-cluster = "image_cluster.cli:main"
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+ignore_missing_imports = true
+
+[tool.coverage.run]
+source = ["src"]
+
+[tool.ruff.lint.per-file-ignores]
+# report.py embeds a CSS/HTML template and pipeline.py logs long f-strings.
+"src/image_cluster/core/report.py" = ["E501"]
+"src/image_cluster/core/pipeline.py" = ["E501"]
