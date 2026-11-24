@@ -79,7 +79,7 @@ class ClusterPipeline:
 
     def _load_input(self) -> list[dict]:
         items = []
-        with open(self.config.input_path) as f:
+        with open(self.config.input_path, encoding="utf-8") as f:
             reader = csv.DictReader(f)
             for row in reader:
                 item_id = row.get("id") or row.get("product_id") or row.get("sku")

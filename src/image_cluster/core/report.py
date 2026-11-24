@@ -59,7 +59,7 @@ def generate_report(clusters: dict[str, list[str]], cache_dir: Path, output_path
 
     html = HTML_TEMPLATE.format(summary=summary, clusters_html="\n".join(clusters_html_parts))
     report_path = output_path / "report.html"
-    report_path.write_text(html)
+    report_path.write_text(html, encoding="utf-8")
     logger.info(f"Report written to {report_path}")
 
 

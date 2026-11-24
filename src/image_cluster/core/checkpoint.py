@@ -20,7 +20,7 @@ class CheckpointManager:
         state_file = self._state_file()
         if not state_file.exists():
             return
-        with open(state_file) as f:
+        with open(state_file, encoding="utf-8") as f:
             state = json.load(f)
         self.processed = set(state.get("processed", []))
         self.all_pairs = [tuple(p) for p in state.get("pairs", [])]
@@ -34,7 +34,7 @@ class CheckpointManager:
             "processed": list(self.processed),
             "pairs": self.all_pairs,
         }
-        with open(self._state_file(), "w") as f:
+        with open(self._state_file(), "w", encoding="utf-8") as f:
             json.dump(state, f)
 
     def mark_batch(self, ids: list[str], pairs: list[tuple[str, str, float]]) -> None:

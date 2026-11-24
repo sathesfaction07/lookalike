@@ -54,6 +54,6 @@ def save_clusters(clusters: dict[str, list[str]], output_path: Path) -> None:
         ],
     }
     out_file = output_path / "clusters.json"
-    with open(out_file, "w") as f:
+    with open(out_file, "w", encoding="utf-8") as f:
         json.dump(result, f, indent=2)
     logger.info(f"Wrote {len(clusters)} clusters to {out_file}")

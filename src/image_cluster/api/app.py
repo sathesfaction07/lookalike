@@ -209,7 +209,7 @@ async def _run_clustering(job_id: str, req: ClusterRequest):
 
 def _parse_csv(csv_path: Path) -> list[dict]:
     items = []
-    with open(csv_path) as f:
+    with open(csv_path, encoding="utf-8") as f:
         reader = csv.DictReader(f)
         for row in reader:
             item_id = row.get("id") or row.get("product_id") or ""
