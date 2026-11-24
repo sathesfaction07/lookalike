@@ -56,3 +56,8 @@ source = ["src"]
 # report.py embeds a CSS/HTML template and pipeline.py logs long f-strings.
 "src/image_cluster/core/report.py" = ["E501"]
 "src/image_cluster/core/pipeline.py" = ["E501"]
+
+[tool.hatch.build.targets.wheel]
+# The distribution is named "lookalike" but the import package keeps its original name, so hatchling
+# cannot find it by name and must be told where it is.
+packages = ["src/image_cluster"]
