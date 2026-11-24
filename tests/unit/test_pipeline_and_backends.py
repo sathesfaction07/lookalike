@@ -127,10 +127,6 @@ class TestPipeline:
         pipe._check_memory()
         assert pipe.config.batch_size == 32
 
-    @pytest.mark.xfail(strict=True, reason=(
-        "Known gap: each batch is searched against the index BEFORE it is added, so two "
-        "near-duplicates in the same batch are never compared. Remove this marker when fixed."
-    ))
     def test_near_duplicates_in_the_same_batch_are_found(self, tmp_path, catalogue,
                                                          stand_ins):
         cfg = config(tmp_path, catalogue, batch_size=64, report=False)

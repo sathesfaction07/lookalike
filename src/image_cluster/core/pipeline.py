@@ -103,7 +103,9 @@ class ClusterPipeline:
         if embeddings.shape[0] == 0:
             return
 
+        # against everything indexed so far, and within this batch
         pairs = self.index.find_similar_pairs(embeddings, ids)
+        pairs += self.index.find_pairs_within(embeddings, ids)
         self.index.add(ids, embeddings)
         self.checkpoint.mark_batch(ids, pairs)
 

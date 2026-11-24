@@ -58,3 +58,18 @@ class TestSimilarityIndex:
         loaded = SimilarityIndex(dimension=1280, threshold=0.5)
         assert loaded.load(tmp_path)
         assert loaded.size == 10
+
+
+def test_pairs_within_a_batch_are_found_once_each():
+    """find_similar_pairs only searches what is already indexed; this covers the batch itself."""
+    import numpy as np
+
+    from image_cluster.core.index import SimilarityIndex
+
+    vecs = np.array([[1.0, 0.0], [0.999, 0.045], [0.0, 1.0]], dtype=np.float32)
+    vecs /= np.linalg.norm(vecs, axis=1, keepdims=True)
+    index = SimilarityIndex(dimension=2, threshold=0.95)
+    pairs = index.find_pairs_within(vecs, ["a", "b", "c"])
+    assert [(s, t) for s, t, _ in pairs] == [("a", "b")]
+    assert pairs[0][2] > 0.99
+    assert index.find_pairs_within(vecs[:1], ["a"]) == []

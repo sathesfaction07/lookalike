@@ -134,10 +134,6 @@ def test_csv_rows_need_both_an_id_and_a_url(api, tmp_path):
     assert api.mod._parse_csv(path) == [{"id": "A", "url": "http://x/a.jpg"}]
 
 
-@pytest.mark.xfail(strict=True, reason=(
-    "Known gap shared with the CLI pipeline: images are searched against the index before "
-    "their batch (32) is added, so near-duplicates uploaded together are never compared."
-))
 def test_uploaded_near_duplicates_are_clustered(api):
     job_id = upload(api, [("red1.jpg", jpeg((250, 10, 10)), "image/jpeg"),
                           ("red2.jpg", jpeg((245, 12, 8)), "image/jpeg")])["job_id"]

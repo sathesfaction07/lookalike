@@ -183,7 +183,9 @@ async def _run_clustering(job_id: str, req: ClusterRequest):
 
             embeddings = embedder.embed_batch(batch_paths)
             if embeddings.shape[0] > 0:
+                # against everything indexed so far, and within this batch
                 pairs = index.find_similar_pairs(embeddings, batch_ids)
+                pairs += index.find_pairs_within(embeddings, batch_ids)
                 index.add(batch_ids, embeddings)
                 all_pairs.extend(pairs)
 

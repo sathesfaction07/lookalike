@@ -43,6 +43,27 @@ class SimilarityIndex:
 
         return pairs
 
+    def find_pairs_within(
+        self, embeddings: np.ndarray, ids: list[str]
+    ) -> list[tuple[str, str, float]]:
+        """Similar pairs inside one batch.
+
+        find_similar_pairs only searches vectors that are already indexed, and callers add a
+        batch after searching it, so without this two near-duplicates that arrive in the same
+        batch are never compared. Each pair is reported once.
+        """
+        n = len(ids)
+        if n < 2:
+            return []
+        scores = embeddings @ embeddings.T
+        rows, cols = np.triu_indices(n, k=1)
+        hits = scores[rows, cols] >= self.threshold
+        return [
+            (ids[i], ids[j], float(scores[i, j]))
+            for i, j in zip(rows[hits], cols[hits], strict=True)
+            if ids[i] != ids[j]
+        ]
+
     def save(self, path: Path) -> None:
         faiss.write_index(self.index, str(path / "index.faiss"))
         np.save(path / "ids.npy", np.array(self._ids))
