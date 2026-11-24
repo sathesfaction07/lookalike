@@ -231,3 +231,17 @@ class TestBackends:
         monkeypatch.setattr("image_cluster.backends.titan.boto3.client", lambda *a, **k: Down())
         out = TitanEmbeddingBackend().embed_batch([image(tmp_path / "x.jpg", (1, 1, 1))])
         assert out.shape == (0, 1024)
+
+
+def test_a_default_install_without_boto3_still_loads_and_explains_the_extra(monkeypatch):
+    """boto3 is the optional [titan] extra. The registry used to import every backend
+    eagerly, so a default install failed on the first import of the pipeline, CLI or API."""
+    import sys
+
+    monkeypatch.setitem(sys.modules, "boto3", None)  # behave as if boto3 is not installed
+    monkeypatch.delitem(sys.modules, "image_cluster.backends.titan", raising=False)
+    import importlib
+
+    importlib.import_module("image_cluster.core.pipeline")  # must not need boto3
+    with pytest.raises(ModuleNotFoundError, match=r"pip install 'lookalike\[titan\]'"):
+        get_embedding_backend("titan")
