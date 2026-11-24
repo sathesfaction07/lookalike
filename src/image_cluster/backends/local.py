@@ -6,7 +6,7 @@ import torch
 from PIL import Image
 from torchvision import models, transforms
 
-from .base import EmbeddingBackend
+from .base import EmbeddingBackend, aligned_unit_rows
 
 logger = logging.getLogger("image_cluster")
 
@@ -38,21 +38,15 @@ class LocalEmbeddingBackend(EmbeddingBackend):
         return model
 
     def embed_batch(self, image_paths: list[Path]) -> np.ndarray:
-        tensors = []
-        for path in image_paths:
-            tensor = self._load_image(path)
-            if tensor is not None:
-                tensors.append(tensor)
-
-        if not tensors:
-            return np.zeros((0, self._dimension), dtype=np.float32)
-
-        batch = torch.stack(tensors).to(self.device)
-        with torch.no_grad():
-            embeddings = self.model(batch).cpu().numpy()
-
-        embeddings = embeddings / np.linalg.norm(embeddings, axis=1, keepdims=True)
-        return embeddings.astype(np.float32)
+        tensors = [self._load_image(path) for path in image_paths]
+        loaded = [t for t in tensors if t is not None]
+        rows: list[np.ndarray | None] = [None] * len(image_paths)
+        if loaded:
+            batch = torch.stack(loaded).to(self.device)
+            with torch.no_grad():
+                vectors = iter(self.model(batch).cpu().numpy())
+            rows = [next(vectors) if t is not None else None for t in tensors]
+        return aligned_unit_rows(rows, self._dimension)
 
     def _load_image(self, path: Path) -> torch.Tensor | None:
         try:

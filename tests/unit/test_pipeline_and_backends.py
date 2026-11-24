@@ -208,25 +208,29 @@ class TestBackends:
                 sent.append((kwargs["modelId"], payload["embeddingConfig"]))
                 if len(sent) == 2:
                     raise RuntimeError("throttled")
-                return {"body": io.BytesIO(json.dumps({"embedding": [3.0, 4.0]}).encode())}
+                vector = [3.0, 4.0] + [0.0] * 1022  # Titan returns 1024 values
+                return {"body": io.BytesIO(json.dumps({"embedding": vector}).encode())}
 
         monkeypatch.setattr("image_cluster.backends.titan.boto3.client",
                             lambda *a, **k: Bedrock())
         backend = TitanEmbeddingBackend(region="us-east-1")
         out = backend.embed_batch([good, bad])
         assert backend.dimension == 1024
-        assert out.shape == (1, 2)
-        assert np.allclose(out[0], [0.6, 0.8])  # unit length
+        assert out.shape == (2, 1024)  # one row per input, in order
+        assert np.allclose(out[0, :2], [0.6, 0.8])  # unit length
+        assert np.isnan(out[1]).all()  # the failed image keeps its slot
         assert sent[0] == ("amazon.titan-embed-image-v1", {"outputEmbeddingLength": 1024})
 
-    def test_titan_with_nothing_embedded_returns_an_empty_matrix(self, monkeypatch, tmp_path):
+    def test_titan_marks_every_failed_image_rather_than_dropping_it(self, monkeypatch,
+                                                                    tmp_path):
         class Down:
             def invoke_model(self, **kw):
                 raise RuntimeError("down")
 
         monkeypatch.setattr("image_cluster.backends.titan.boto3.client", lambda *a, **k: Down())
         out = TitanEmbeddingBackend().embed_batch([image(tmp_path / "x.jpg", (1, 1, 1))])
-        assert out.shape == (0, 1024)
+        assert out.shape == (1, 1024)
+        assert np.isnan(out).all()
 
 
 def test_a_default_install_without_boto3_still_loads_and_explains_the_extra(monkeypatch):
@@ -241,3 +245,45 @@ def test_a_default_install_without_boto3_still_loads_and_explains_the_extra(monk
     importlib.import_module("image_cluster.core.pipeline")  # must not need boto3
     with pytest.raises(ModuleNotFoundError, match=r"pip install 'lookalike\[titan\]'"):
         get_embedding_backend("titan")
+
+
+
+def test_ids_stay_with_their_images_when_a_download_or_an_embedding_fails(tmp_path, monkeypatch):
+    """Item ids used to be taken as the first N of the batch, so one failed download (or one
+    image the backend skipped) shifted every later id onto the wrong vector -- and that
+    mislabelling was saved into the index and the checkpoint."""
+    src = tmp_path / "src"
+    src.mkdir()
+    rows = [
+        ("A", image(src / "A.jpg", (250, 10, 10)).as_uri()),
+        ("GONE", (src / "missing.jpg").as_uri()),  # download fails
+        ("BAD", image(src / "BAD.jpg", (9, 9, 9)).as_uri()),  # embedding fails
+        ("B", image(src / "B.jpg", (245, 12, 8)).as_uri()),
+        ("C", image(src / "C.jpg", (10, 10, 250)).as_uri()),
+    ]
+    csv_path = tmp_path / "in.csv"
+    lines = ["id,image_url"] + [f"{i},{u}" for i, u in rows]
+    csv_path.write_text("\n".join(lines) + "\n",
+                        encoding="utf-8")
+
+    class FailsOnBad(AverageColour):
+        def embed_batch(self, image_paths):
+            out = super().embed_batch(image_paths)
+            for k, path in enumerate(image_paths):
+                if path.stem == "BAD":
+                    out[k] = np.nan
+            return out
+
+    monkeypatch.setattr(pipeline_mod, "get_embedding_backend", lambda name, **kw: FailsOnBad())
+
+    class Memory:
+        percent = 10.0
+
+    monkeypatch.setattr(pipeline_mod.psutil, "virtual_memory", lambda: Memory)
+    cfg = config(tmp_path, csv_path, batch_size=64, report=False)
+    pipe = ClusterPipeline(cfg)
+    pipe.run()
+
+    assert pipe.index._ids == ["A", "B", "C"]
+    result = json.loads((cfg.output_path / "clusters.json").read_text(encoding="utf-8"))
+    assert [sorted(c["members"]) for c in result["clusters"]] == [["A", "B"]]

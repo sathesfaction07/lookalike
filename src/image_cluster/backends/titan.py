@@ -6,7 +6,7 @@ from pathlib import Path
 import boto3
 import numpy as np
 
-from .base import EmbeddingBackend
+from .base import EmbeddingBackend, aligned_unit_rows
 
 logger = logging.getLogger("image_cluster")
 
@@ -22,18 +22,7 @@ class TitanEmbeddingBackend(EmbeddingBackend):
         return self._dimension
 
     def embed_batch(self, image_paths: list[Path]) -> np.ndarray:
-        embeddings = []
-        for path in image_paths:
-            embedding = self._embed_one(path)
-            if embedding is not None:
-                embeddings.append(embedding)
-
-        if not embeddings:
-            return np.zeros((0, self._dimension), dtype=np.float32)
-
-        result = np.array(embeddings, dtype=np.float32)
-        result = result / np.linalg.norm(result, axis=1, keepdims=True)
-        return result
+        return aligned_unit_rows([self._embed_one(p) for p in image_paths], self._dimension)
 
     def _embed_one(self, path: Path) -> np.ndarray | None:
         try:

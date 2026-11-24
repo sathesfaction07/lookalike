@@ -11,6 +11,7 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
 from ..backends import get_embedding_backend
+from ..backends.base import embedded_mask
 from ..core.clusters import build_clusters
 from ..core.downloader import ImageDownloader
 from ..core.index import SimilarityIndex
@@ -182,6 +183,9 @@ async def _run_clustering(job_id: str, req: ClusterRequest):
             batch_ids = ids[i : i + batch_size]
 
             embeddings = embedder.embed_batch(batch_paths)
+            ok = embedded_mask(embeddings)  # drop failed images together with their ids
+            batch_ids = [i for i, keep in zip(batch_ids, ok, strict=True) if keep]
+            embeddings = embeddings[ok]
             if embeddings.shape[0] > 0:
                 # against everything indexed so far, and within this batch
                 pairs = index.find_similar_pairs(embeddings, batch_ids)

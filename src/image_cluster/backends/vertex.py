@@ -3,7 +3,7 @@ from pathlib import Path
 
 import numpy as np
 
-from .base import EmbeddingBackend
+from .base import EmbeddingBackend, aligned_unit_rows
 
 logger = logging.getLogger("image_cluster")
 
@@ -26,18 +26,13 @@ class VertexEmbeddingBackend(EmbeddingBackend):
         aiplatform.init(project=self.project_id, location=self.location)
         model = MultiModalEmbeddingModel.from_pretrained("multimodalembedding")
 
-        embeddings = []
+        rows: list[np.ndarray | None] = []
         for path in image_paths:
             try:
                 image = VertexImage.load_from_file(str(path))
                 result = model.get_embeddings(image=image)
-                embeddings.append(np.array(result.image_embedding, dtype=np.float32))
+                rows.append(np.array(result.image_embedding, dtype=np.float32))
             except Exception as e:
                 logger.warning(f"Vertex embed failed for {path.name}: {e}")
-
-        if not embeddings:
-            return np.zeros((0, self._dimension), dtype=np.float32)
-
-        result = np.array(embeddings, dtype=np.float32)
-        result = result / np.linalg.norm(result, axis=1, keepdims=True)
-        return result
+                rows.append(None)
+        return aligned_unit_rows(rows, self._dimension)

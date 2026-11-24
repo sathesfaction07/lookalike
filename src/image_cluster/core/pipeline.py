@@ -6,6 +6,7 @@ import psutil
 from rich.progress import BarColumn, Progress, SpinnerColumn, TextColumn, TimeElapsedColumn
 
 from ..backends import get_embedding_backend
+from ..backends.base import embedded_mask
 from ..config import PipelineConfig
 from .checkpoint import CheckpointManager
 from .clusters import build_clusters, save_clusters
@@ -93,13 +94,16 @@ class ClusterPipeline:
         return [items[i : i + bs] for i in range(0, len(items), bs)]
 
     def _process_batch(self, batch: list[dict]) -> None:
-        paths = self.downloader.download_batch(batch)
-        if not paths:
+        fetched = self.downloader.download_with_ids(batch)
+        if not fetched:
             return
 
-        ids = [item["id"] for item in batch[: len(paths)]]
-        embeddings = self.embedder.embed_batch(paths)
-
+        # Keep every id attached to its own image: a failed download or embedding drops the
+        # id with it, rather than shifting later ids onto the wrong vectors.
+        embeddings = self.embedder.embed_batch([path for _, path in fetched])
+        ok = embedded_mask(embeddings)
+        ids = [item_id for (item_id, _), keep in zip(fetched, ok, strict=True) if keep]
+        embeddings = embeddings[ok]
         if embeddings.shape[0] == 0:
             return
 

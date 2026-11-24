@@ -13,6 +13,14 @@ class ImageDownloader:
         self.cache_dir.mkdir(parents=True, exist_ok=True)
 
     def download_batch(self, items: list[dict]) -> list[Path]:
+        return [path for _, path in self.download_with_ids(items)]
+
+    def download_with_ids(self, items: list[dict]) -> list[tuple[str, Path]]:
+        """(item id, local path) for every item that could be fetched, in input order.
+
+        Items that fail are left out *with* their id, so callers never have to guess which
+        path belongs to which item.
+        """
         results: list[Path | None] = [None] * len(items)
 
         with ThreadPoolExecutor(max_workers=self.max_workers) as pool:
@@ -39,7 +47,7 @@ class ImageDownloader:
                 except Exception as e:
                     logger.warning(f"Download failed for item {items[idx]['id']}: {e}")
 
-        return [p for p in results if p is not None]
+        return [(item["id"], p) for item, p in zip(items, results, strict=True) if p is not None]
 
     def _download_one(self, url: str, dest: Path) -> Path:
         urlretrieve(url, dest)
